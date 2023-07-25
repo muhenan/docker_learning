@@ -69,6 +69,20 @@ services:
     image: "wayfair/finance-bank-transaction-ingestion"
 ```
 
+command
+
+`docker-compose run --rm unit-test`
+
+The command docker-compose run --rm unit-test is used to run a one-time container from a specific service defined in the docker-compose.yml file. Let's break down the command:
+
+docker-compose: This is the command used to manage multi-container Docker applications using Docker Compose.
+
+run: This subcommand is used to run a command inside a service container.
+
+--rm: This option tells Docker Compose to automatically remove the container after it exits. This ensures that the container is cleaned up and doesn't clutter the system with unnecessary containers.
+
+unit-test: This is the name of the service defined in the docker-compose.yml file. It specifies the service container in which the command will be executed.
+
 ## Volume
 
 
