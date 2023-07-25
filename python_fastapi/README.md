@@ -34,6 +34,17 @@ there is a VM, you can take a container as a VM.
 
 inside the VM, you got everything you need for a machine. And the most important part `app`, the app we built
 
+
+`entrypoint and command:`
+
+```
+lock-requirements:
+  <<: *finance-bank-transaction-ingestion
+  entrypoint: /bin/bash
+  command: docker/lock_requirements.sh
+```
+
+
 ## volumn, bind mount
 
 bind mount, no volume

@@ -1,0 +1,130 @@
+version: '3.9'
+
+x-build-args: &build_args
+  PROJECT_LABEL: "Finance Bank Transaction Ingestion"
+  PROJECT_MAINTAINER: "Finance Engineering <mailto:FinanceEngineering@wayfair.com>"
+  PROJECT_NAME: finance-bank-transaction-ingestion
+  PACKAGE_INDEX: https://artifactory.service.bo1.csnzoo.com/artifactory/api/pypi/python/simple
+
+services:
+  finance-bank-transaction-ingestion: &finance-bank-transaction-ingestion
+    build: &default_build
+      dockerfile: ./docker/finance-bank-transaction-ingestion.dockerfile
+      context: .
+      args:
+        <<: *build_args
+    environment: &environment
+      PYENV_VERSION: "finance-bank-transaction-ingestion"
+    entrypoint: sh docker/files/start-service.sh
+    # The "@" indicates that all arguments will be passed to the script called by `entrypoint`
+    command: "@"
+    volumes:
+    - ./:/app
+    image: "wayfair/finance-bank-transaction-ingestion"
+
+  # "test" enables the developer to run all the tests and linting locally
+  test: &test
+    <<: *finance-bank-transaction-ingestion
+    build:
+      <<: *default_build
+      dockerfile: ./docker/devbox.dockerfile
+    environment:
+      <<: *environment
+      CLICK_ENV: testing
+      WF_POD: local
+      WF_POD_NICENAME: local
+      WF_DB_USER: sa
+      WF_SECRET_SA: P@ssw0rd
+    entrypoint: ""
+    command: "/bin/bash docker/run_tests.sh --format-code"
+    volumes:
+      - ./:/app
+      - ./docker/files/wf-config.ini:/wayfair/etc/wf-config.ini
+      - ./docker/files/secrets/:/wayfair/etc/priv/credentials
+    image: "wayfair/finance-bank-transaction-ingestion-test"
+    depends_on:
+      tabula-rasa:
+        condition: service_completed_successfully
+
+  # "devbox" to enable the developer to have a fully loaded development environment
+  # to test new code using say IPython and other common tools.
+  devbox: &devbox
+    <<: *finance-bank-transaction-ingestion
+    build:
+      <<: *default_build
+      dockerfile: ./docker/devbox.dockerfile
+    environment:
+      <<: *environment
+      CLICK_ENV: dev
+      WF_POD: deviad1
+      WF_POD_NICENAME: DEVIAD1
+    entrypoint: ""
+    command: "/bin/bash"
+    stdin_open: true
+    tty: true
+    user: root
+    volumes:
+      - ./:/app
+      - ./docker/files/wf-config.ini:/wayfair/etc/wf-config.ini
+      - home:/root
+      - local_secret_gcp_jenkdocker_batch-dev:/wayfair/etc/priv/credentials:ro
+    depends_on:
+      local-secret-distributor:
+        condition: service_started
+
+  lock-requirements:
+    <<: *finance-bank-transaction-ingestion
+    entrypoint: /bin/bash
+    command: docker/lock_requirements.sh
+
+  smoke-test:
+    <<: *devbox
+    command: sh docker/files/start-service.sh process-bank-statements auto_release_lock no_skip ignore_lock
+
+  # external images
+
+  local-secret-distributor:
+    image: "wayfair/local-secret-distributor:latest"
+    environment:
+      DISTRIBUTIONS: "gcp_jenkdocker_batch-dev"
+    volumes:
+      - "local_secret_gcp_jenkdocker_batch-dev:/wayfair/etc/priv/gcp_jenkdocker_batch-dev"
+      - "~/.:/root/hosthomedir"
+      - "/var/run/docker.sock:/run/docker.sock"
+
+  db:
+    image: http://mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: P@ssw0rd
+
+  tabula-rasa:
+    image: wayfair/tabula-rasa-v2:latest
+    environment:
+      TABULA_RASA_CONFIG: "local"
+      TABULA_RASA_CONNECTION_HOST: "db"
+      TABULA_RASA_GITHUB_TOKEN_SECRET_NAME: "fintech_general_ledger_git_service_account"
+      TABULA_RASA_GITHUB_TOKEN: "${BUILDKITE_VAULT_FINTECH_GENERAL_LEDGER_GIT_SERVICE_ACCOUNT}"
+      TABULA_RASA_DATABASES: "
+        BOSQLAGINTC2/csn_reconciliation,
+        BOSQLAGINTC2/csn_vendor,
+        BOSQLAGINTC2/csn_cost,
+        PSQLAG043A/csn_emailmsg
+      "
+    volumes:
+      - "local_secret_gcp_jenkdocker_batch-dev:/wayfair/etc/priv/gcp_jenkdocker_batch-dev"
+    depends_on:
+      local-secret-distributor:
+        condition: service_started
+      db:
+        condition: service_started
+
+volumes:
+  home:
+  venv:
+  wayfair-data:
+    driver: local
+  local_secret_gcp_jenkdocker_batch-dev:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
