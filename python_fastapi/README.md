@@ -45,3 +45,10 @@ Named Volume Mount
 docker run -d -p 8000:8000 -v data:/app/data fastapi_app
 ```
 `data` is a volume
+
+
+`TMPFS` (temporary file system) is a type of mount in Docker that allows you to use RAM within a container. It is particularly useful when you need to store temporary or cache data that doesn't need to be persisted between container runs or across multiple containers.
+
+```
+docker run -d -p 8000:8000 --tmpfs /app/temp_data fastapi_app
+```
