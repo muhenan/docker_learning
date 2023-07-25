@@ -33,3 +33,15 @@ Dockerfile  __pycache__  main.py  requirements.txt
 there is a VM, you can take a container as a VM.
 
 inside the VM, you got everything you need for a machine. And the most important part `app`, the app we built
+
+## volumn, bind mount
+
+bind mount, no volume
+```
+docker run -d -p 8000:8000 -v $(pwd)/data:/app/data fastapi_app
+```
+Named Volume Mount
+```
+docker run -d -p 8000:8000 -v data:/app/data fastapi_app
+```
+`data` is a volume

@@ -9,6 +9,9 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create a Docker volume to persist the SQLite database data
+VOLUME /app/data
+
 # Expose port 8000 to the outside world (default port for FastAPI applications)
 EXPOSE 8000
 
