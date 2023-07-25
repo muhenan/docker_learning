@@ -90,4 +90,4 @@ For the volume with the tmpfs driver, it will be a temporary in-memory file syst
 
 
 
-> docker compose 其实没啥，基本就是在调用各种 dockerfile，调用各种 sh 脚本
+> docker compose 其实没啥，基本就是在调用各种 dockerfile，调用各种 sh 脚本，别忘了，这里有整整一整个 docker 文件夹存放管理这些文件，脚本。
